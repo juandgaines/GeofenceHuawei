@@ -21,6 +21,8 @@ internal object GeofencingConstants {
     const val GEOFENCE_RADIUS_IN_METERS = 50f
     const val EXTRA_GEOFENCE_INDEX = "GEOFENCE_INDEX"
 
+    //HMS
+    //LANDMARK_DATA is a list of object that contains dummy data for the geofence and the notification
     val geofences: List<Geofence>
         get() = this.LANDMARK_DATA.map {
             val builder = Geofence.Builder()
@@ -33,6 +35,21 @@ internal object GeofencingConstants {
             builder.setNotificationInterval(notificationResponsiveness)
             builder.build()
         }
+
+    /*GMS
+    val geofences: List<Geofence>
+        get() = this.LANDMARK_DATA.map {
+            val builder = Geofence.Builder()
+            builder..setRequestId(it.identificator)
+            builder.setCircularRegion(it.latitude, it.longitude, GEOFENCE_RADIUS_IN_METERS)
+            builder.setExpirationDuration(expirationDuration)
+            builder.setLoiteringDelay(loiteringDelay)
+            builder.setTransitionTypes(
+               Geofence.GEOFENCE_TRANSITION_ENTER )
+            builder.setNotificationResponsiveness(notificationResponsiveness)
+            builder.build()
+        }
+     */
 
     val LANDMARK_DATA = arrayOf(
         LandmarkDataObject(

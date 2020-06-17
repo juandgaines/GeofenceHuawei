@@ -17,32 +17,36 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
 
         if (intent?.action == ACTION_GEOFENCE_EVENT) {
+            //val geofencingEvent = GeofencingEvent.fromIntent(intent) GMS
+            val geofencingEvent =GeofenceData.getDataFromIntent(intent) //HMS
 
-            val geofencingEvent =GeofenceData.getDataFromIntent(intent)
-
-            if (geofencingEvent.isFailure) {
-                val errorMessage = errorMessage(context!!, geofencingEvent.errorCode)
+            //if (geofencingEvent.hasError()) { GMS
+            if (geofencingEvent.isFailure) { //HMS
+                val errorMessage = errorMessage(context!!, geofencingEvent.errorCode) //ERROR codes constansta re different in HMS and GMS
                 Log.e(Companion.TAG, errorMessage)
                 return
             }
 
-            if (geofencingEvent.conversion == Geofence.ENTER_GEOFENCE_CONVERSION) {
-                Log.v(Companion.TAG, context?.getString(R.string.geofence_entered)!!)
+            //if (geofencingEvent.geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) { GMS
+            if (geofencingEvent.conversion == Geofence.ENTER_GEOFENCE_CONVERSION) { //HMS
+                Log.v(TAG, context?.getString(R.string.geofence_entered)!!)
 
                 val fenceId = when {
-                    geofencingEvent.convertingGeofenceList.isNotEmpty() ->
-                        geofencingEvent.convertingGeofenceList[0].uniqueId
+                    //geofencingEvent.triggeringGeofences.isNotEmpty() -> GMS
+                    geofencingEvent.convertingGeofenceList.isNotEmpty() ->//HMS
+                        //geofencingEvent.triggeringGeofences[0].requestId  GMS
+                        geofencingEvent.convertingGeofenceList[0].uniqueId  //HMS
                     else -> {
-                        Log.e(Companion.TAG, "No Geofence Trigger Found! Abort mission!")
+                        Log.e(TAG, "No Geofence Trigger Found! Abort mission!")
                         return
                     }
                 }
                 // Check geofence against the constants listed in GeofenceUtil.kt to see if the
                 // user has entered any of the locations we track for geofences.
-                val foundIndex = GeofencingConstants.LANDMARK_DATA.random()
+                val foundIndex = GeofencingConstants.LANDMARK_DATA.find { it.identificator==fenceId}
 
-                val store = foundIndex.store
-                val promo = foundIndex.promo
+                val store = foundIndex?.store
+                val promo = foundIndex?.promo
 
                 val notificationManager = ContextCompat.getSystemService(
                     context,
@@ -50,7 +54,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 ) as NotificationManager
 
                 notificationManager.sendGeofenceEnteredNotification(
-                    context, store, promo
+                    context, store?:"No store", promo?:"No promo"
                 )
             }
 

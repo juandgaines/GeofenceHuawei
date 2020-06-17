@@ -43,7 +43,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var currentLocation: LatLng
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
-    lateinit var geofencingService: GeofenceService
+
+    //lateinit var geofencingClient: GeofencingClient  GMS
+    lateinit var geofencingService: GeofenceService   //HMS
 
     private val runningQOrLater =
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
@@ -51,8 +53,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
         intent.action = ACTION_GEOFENCE_EVENT
-        // Use FLAG_UPDATE_CURRENT so that you get the same pending intent back when calling
-        // addGeofences() and removeGeofences().
         PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
@@ -101,29 +101,70 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         checkPermissionsAndStartGeofencing()
-
-        geofencingService = LocationServices.getGeofenceService(this)
+        //geofencingClient = LocationServices.getGeofencingClient(this) GMS
+        geofencingService = LocationServices.getGeofenceService(this) //HMS
 
         createChannel(this)
 
         val geofenceRequest = GeofenceRequest.Builder()
         geofenceRequest.createGeofenceList(GeofencingConstants.geofences)
-        geofenceRequest.setCoordinateType(Geofence.ENTER_GEOFENCE_CONVERSION )
-        val reuqest = geofenceRequest.build()
-        val voidTask = geofencingService.createGeofenceList(reuqest, geofencePendingIntent)
+        geofenceRequest.setCoordinateType(Geofence.ENTER_GEOFENCE_CONVERSION)
+        val request = getGeofencingRequest()
 
-        voidTask.addOnCompleteListener {
-            if (it.isSuccessful) {
-                Toast.makeText(this, "Geofences added succesfully", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(
-                    this,
-                    "Geofences adding fail ${it.exception.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
+        //HMS
+        geofencingService.createGeofenceList(request, geofencePendingIntent).run {
+            addOnCompleteListener {
+                if (it.isSuccessful) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Geofences added succesfully",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Geofences adding fail ${it.exception.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
+            addOnFailureListener {
+                // Failed to add geofences
+                // ...
+            }
+
+            /* GMS
+            geofencingClient?.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+                addOnSuccessListener {
+                    // Geofences added
+                    // ...
+                }
+                addOnFailureListener {
+                    // Failed to add geofences
+                    // ...
+                }
+            }
+         */
+
         }
+
     }
+
+    private fun getGeofencingRequest(): GeofenceRequest {
+        return GeofenceRequest.Builder().apply {
+            createGeofenceList(GeofencingConstants.geofences)
+            setCoordinateType(Geofence.ENTER_GEOFENCE_CONVERSION)
+        }.build()
+    }
+
+    /*GMS
+    private fun getGeofencingRequest(): GeofencingRequest {
+        return GeofencingRequest.Builder().apply {
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            addGeofences(geofenceList)
+        }.build()
+    }
+    */
 
     fun enableMyLocation() {
         if (isPermissionGranted(this)) {
@@ -200,7 +241,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 .fillColor(0x4000ff00)
                 .strokeColor(Color.GREEN)
                 .strokeWidth(2f)
-            hMap?.addCircle( circleOptions)
+            hMap?.addCircle(circleOptions)
         }
 
     }
@@ -208,19 +249,36 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onDestroy() {
         super.onDestroy()
 
-        val removeTask =
-            geofencingService.deleteGeofenceList(LANDMARK_DATA.map { it.identificator })
-        removeTask.addOnCompleteListener {
-            if (it.isSuccessful) {
-                Toast.makeText(this, "Geofences removed succesfully", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(
-                    this,
-                    "Geofences adding fail ${it.exception.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
+        //HMS
+            geofencingService.deleteGeofenceList(LANDMARK_DATA.map { it.identificator }).run{
+                addOnCompleteListener {
+                    if (it.isSuccessful) {
+                        Toast.makeText(this@MainActivity, "Geofences removed succesfully", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Geofences adding fail ${it.exception.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+
+        /*GMS
+        geofencingClient?.removeGeofences(geofencePendingIntent)?.run {
+            addOnSuccessListener {
+                // Geofences removed
+                // ...
+            }
+            addOnFailureListener {
+                // Failed to remove geofences
+                // ...
             }
         }
+        */
+
+
+
     }
 
 
